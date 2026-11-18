@@ -1,0 +1,87 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: One row per order, all statuses. Use is_delivered = true for revenue and delivery metrics.
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "delivered_at >= purchased_at or delivered_at is null"
+      - expression_is_true:
+          arguments:
+            expression: "is_delivered = (days_vs_estimate is not null)"
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_unique_id
+        description: The person. Use this (not customer_id) for repeat-purchase metrics.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_unique_id
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [delivered, shipped, canceled, unavailable, invoiced, processing, created, approved]
+      - name: items_value
+        description: Sum of item prices. GMV = sum of this over delivered orders (freight excluded).
+        data_tests:
+          - expression_is_true:
+              arguments:
+                expression: "items_value >= 0"
+      - name: review_score
+        description: Deduplicated review (see int_order_reviews_dedup). Null when the order has no review.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+      - name: is_review_before_delivery
+        description: Review written before the delivery date. Flag or drop these in the RD analysis.
+
+  - name: fct_order_items
+    description: One row per order item, with category and seller. Grain for seller / category revenue.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "order_id || '-' || order_item_id"
+      - expression_is_true:
+          arguments:
+            expression: "price >= 0 and freight_value >= 0"
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_orders')
+                field: order_id
+      - name: seller_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: seller_id
+
+  - name: dim_sellers
+    description: One row per seller. lifetime_gmv = sum of item price on delivered orders, freight excluded.
+    columns:
+      - name: seller_id
+        data_tests: [unique, not_null]
+
+  - name: dim_customers
+    description: >
+      One row per person (customer_unique_id). Olist issues a new customer_id for every order, so
+      grouping by customer_id would make every customer look like a one-time buyer.
+    columns:
+      - name: customer_unique_id
+        data_tests: [unique, not_null]
+      - name: orders
+        data_tests:
+          - expression_is_true:
+              arguments:
+                expression: "orders >= 1"

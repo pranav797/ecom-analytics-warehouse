@@ -1,0 +1,39 @@
+version: 2
+
+# Intermediate = reusable joins and logic, not meant to be queried directly by the dashboard.
+
+models:
+  - name: int_order_items_enriched
+    description: Order items with English product category and seller state.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "order_id || '-' || order_item_id"
+    columns:
+      - name: category
+        description: English name; Portuguese if untranslated; 'unknown' if the product has no category.
+        data_tests: [not_null]
+
+  - name: int_order_delivery
+    description: One row per order with delivery timing vs the promised (estimated) date.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: is_delivered
+        description: status = 'delivered' AND delivered_at is not null.
+        data_tests: [not_null]
+      - name: days_vs_estimate
+        description: delivered date − estimated date, in whole days. Negative = early, 0 = on the day, positive = late. Null if not delivered.
+      - name: is_late
+        description: days_vs_estimate > 0. Null if not delivered.
+
+  - name: int_order_reviews_dedup
+    description: >
+      One review per order. When an order has several reviews (547 orders), keep the one answered
+      most recently (tie-break: review_id). Rejected alternatives: earliest review (ignores the
+      customer's update) and the average score (non-integer, breaks the 5-star-rate metric).
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: reviews_for_order
+        description: How many reviews the order had before deduplication.
