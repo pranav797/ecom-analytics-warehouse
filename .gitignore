@@ -19,3 +19,6 @@ reports/.evidence/
 
 # secrets
 .env
+
+# dbt local user id
+warehouse/.user.yml

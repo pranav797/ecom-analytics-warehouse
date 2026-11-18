@@ -1,0 +1,110 @@
+version: 2
+
+# Staging = one view per raw table: rename, cast, nothing else. No joins, no business logic.
+
+models:
+  - name: stg_orders
+    description: One row per order.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [delivered, shipped, canceled, unavailable, invoiced, processing, created, approved]
+      - name: purchased_at
+        data_tests: [not_null]
+      - name: estimated_delivery_date
+        data_tests: [not_null]
+      - name: delivered_at
+        description: Null for orders that never reached the customer (~3%).
+
+  - name: stg_order_items
+    description: One row per item in an order. Primary key is (order_id, order_item_id).
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "order_id || '-' || order_item_id"
+    columns:
+      - name: order_id
+        data_tests: [not_null]
+      - name: order_item_id
+        data_tests: [not_null]
+      - name: product_id
+        data_tests: [not_null]
+      - name: seller_id
+        data_tests: [not_null]
+      - name: price
+        data_tests: [not_null]
+
+  - name: stg_order_payments
+    description: One row per payment. Primary key is (order_id, payment_sequential); an order can be split across several payments.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "order_id || '-' || payment_sequential"
+    columns:
+      - name: order_id
+        data_tests: [not_null]
+      - name: payment_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [credit_card, boleto, voucher, debit_card, not_defined]
+
+  - name: stg_order_reviews
+    description: >
+      One row per (review, order). review_id alone is NOT unique (one review can cover several orders)
+      and some orders have several reviews; deduplicated to one per order in int_order_reviews_dedup.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "review_id || '-' || order_id"
+    columns:
+      - name: review_id
+        data_tests: [not_null]
+      - name: order_id
+        data_tests: [not_null]
+      - name: review_score
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+  - name: stg_customers
+    description: >
+      One row per customer_id, which is issued per ORDER. The same person gets a new customer_id
+      on every order; customer_unique_id identifies the person.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: customer_unique_id
+        data_tests: [not_null]
+
+  - name: stg_sellers
+    columns:
+      - name: seller_id
+        data_tests: [unique, not_null]
+
+  - name: stg_products
+    description: category_name_pt is null for ~600 products.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+
+  - name: stg_product_category_translation
+    description: Portuguese -> English category names. Two categories in products have no row here.
+    columns:
+      - name: category_name_pt
+        data_tests: [unique, not_null]
+
+  - name: stg_geolocation
+    description: Many rows per zip prefix, so no primary key.
+    columns:
+      - name: zip_code_prefix
+        data_tests: [not_null]

@@ -1,0 +1,8 @@
+olist_warehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # Same env var as ingest/load_raw.py; default assumes dbt is run from warehouse/
+      path: "{{ env_var('WAREHOUSE_PATH', '../data/warehouse.duckdb') }}"
+      threads: 4
