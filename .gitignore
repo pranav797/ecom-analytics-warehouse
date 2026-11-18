@@ -1,0 +1,21 @@
+# data
+data/raw/
+*.duckdb
+*.duckdb.wal
+
+# python
+__pycache__/
+.venv/
+
+# dbt
+warehouse/target/
+warehouse/dbt_packages/
+warehouse/logs/
+
+# evidence
+reports/node_modules/
+reports/build/
+reports/.evidence/
+
+# secrets
+.env

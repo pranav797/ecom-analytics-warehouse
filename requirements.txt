@@ -1,0 +1,7 @@
+dbt-core==1.12.7
+dbt-duckdb==1.11.1
+duckdb==2.0.0
+pandas==3.1.1
+statsmodels==0.15.0
+rdrobust==2.1.1
+kaggle==2.2.5
