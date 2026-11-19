@@ -146,7 +146,7 @@ records what happened.
 
 ---
 
-## Phase 5: Dashboard and deploy (in progress), local work in commit `9243ac9`
+## Phase 5: Dashboard and deploy (done)
 
 **Done**
 - Logging: created this `PROGRESS.md`, covering setup through Phase 4.
@@ -212,3 +212,15 @@ records what happened.
   setup-node to v7, which run on Node 24.
 - The Vercel project was created from the GitHub import with preset "Other" and no build command.
   The Git connection should be disconnected so Vercel doesn't redeploy the raw repo on every push.
+- **`VERCEL_ORG_ID` confusion:** the user removed it, thinking a Hobby account has no org. The
+  Vercel CLI requires it alongside the project ID. A Hobby account's scope ("pranav797's
+  projects") is a team, with Team ID `team_PrHHqNlGLTO60aKIOS7Zs1Tj`, which was read from a
+  Vercel API error response. Set as the secret with the user's OK.
+- The Node 24 action versions ran green with no deprecation warning (run 44440525767).
+- **First deploy:** run 44440878431, triggered by hand. Every step passed, including the deploy.
+  **Live at https://ecom-analytics-warehouse.vercel.app.** All 4 pages return HTTP 200 publicly,
+  and the Findings page renders its numbers from the deployed Parquet files with no console
+  errors.
+- **Not verified:** whether the Vercel project's Git connection was disconnected. The Vercel
+  connector in this session has no access to the user's scope (403). If it's still connected,
+  Vercel may also redeploy the raw repo on push.

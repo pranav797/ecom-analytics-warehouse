@@ -343,6 +343,19 @@ editing, use `npm run dev` instead; pages reload as you save.
    `data={monthly_kpi}` and run `npm run build:strict`. It fails with "not defined", which is how
    CI catches broken pages. Change it back.
 
+### Confirm the deploy
+1. **Live site**: https://ecom-analytics-warehouse.vercel.app. Open all 4 pages. Findings should
+   show −0.62 and −0.03.
+2. **The pipeline**: open the repo's **Actions** tab. The latest `build-deploy` run should be
+   green, and every step should be ticked, including "Deploy to Vercel".
+3. **What the pipeline does on every push**: click into a run and expand "dbt build". It's the same
+   `PASS=85` you see locally, running on a fresh Linux machine that downloaded the data from
+   scratch.
+4. **Break CI on purpose (optional)**. On a branch, change a test so it fails (e.g. remove
+   `approved` from the `order_status` accepted values) and push the branch. The workflow only runs
+   on `main`, so trigger it on the branch from the Actions tab ("Run workflow"). It should stop at
+   "dbt build" and never reach the deploy. Then delete the branch.
+
 ### Make sure you can answer
 - What does "static site" mean, and why does it never "sleep" like a Streamlit app?
 - Where do the SQL queries run: at build time, in the browser, or both?
