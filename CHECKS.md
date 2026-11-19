@@ -297,3 +297,55 @@ the results match.
 - Why does the +5 placebo fail, and does that undermine the main result?
 - Why is repeat purchase defined with a 24h gap and a 180-day window?
 - What does the memo recommend, and what experiment would test it?
+
+---
+
+## Phase 5: Dashboard and deploy
+
+### What happened, in plain words
+1. **`reports/` is now the dashboard**, built with Evidence. Each page is a Markdown file with SQL
+   blocks and chart tags. Evidence runs the SQL and draws the charts.
+2. **Data flows like this:**
+   ```
+   data/warehouse.duckdb ──export_db.py──▶ reports/sources/warehouse/warehouse.duckdb (older format)
+        ──npm run sources──▶ small Parquet files (one per sources/warehouse/*.sql)
+        ──npm run build──▶ reports/build/ (plain HTML/JS + Parquet; no server needed)
+   ```
+   The browser loads the Parquet files and queries them with a copy of DuckDB that runs inside
+   the page. That's why the dropdowns on the Merchants page work without a server.
+3. **Why the extra export step:** we use the old open-source Evidence, because the new one is a
+   hosted product with no static build. The old one bundles an older DuckDB that can't open our
+   newer file, so we hand it a copy saved in the older format.
+4. **The pipeline file** `.github/workflows/build-deploy.yml` runs everything above on GitHub's
+   servers on every push to `main`, then uploads `reports/build/` to Vercel.
+
+### Run it
+```bash
+cd warehouse && ../.venv/Scripts/dbt build; cd ..
+.venv/Scripts/python analysis/rd_late_delivery.py
+.venv/Scripts/python reports/export_db.py
+cd reports && npm run sources && npm run build:strict && npm run preview; cd ..
+```
+The last command serves the built site at http://localhost:3000. Press Ctrl+C to stop. For live
+editing, use `npm run dev` instead; pages reload as you save.
+
+### Confirm the output
+1. **All 4 pages load**: Overview, Merchants, Delivery & Reviews, Findings. The headline tiles on
+   Overview should read about 13.2M GMV, 96,203 orders and 93.2% on time.
+2. **Filters work**. On Merchants, pick state `RJ`. The seller count and the table should shrink,
+   with no page reload.
+3. **Findings matches the memo**. The tiles should show −0.62 per day and −0.03 at the promised
+   date, the same as `analysis/memo.md`.
+4. **What's actually deployed**. Look inside `reports/build/data/warehouse/`. Each folder holds
+   one tiny Parquet file, and that's all the data the public site gets: aggregates, not the raw
+   orders.
+5. **Break a page on purpose**. In `pages/index.md`, change `data={monthly_kpis}` to
+   `data={monthly_kpi}` and run `npm run build:strict`. It fails with "not defined", which is how
+   CI catches broken pages. Change it back.
+
+### Make sure you can answer
+- What does "static site" mean, and why does it never "sleep" like a Streamlit app?
+- Where do the SQL queries run: at build time, in the browser, or both?
+- Why does the pipeline export a second, older-format DuckDB file?
+- Why can CI deploy to Vercel without Vercel ever seeing the Kaggle credentials?
+- What would you lose by moving to the new Evidence Studio, and what would you gain?

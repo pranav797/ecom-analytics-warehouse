@@ -1,0 +1,59 @@
+name: build-deploy
+
+# Rebuild everything from the raw data and deploy the static dashboard.
+# Secrets: KAGGLE_API_TOKEN (required); VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID (deploy step).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download Olist data and load raw schema
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: python ingest/load_raw.py
+
+      - name: dbt build (models + tests; fails the pipeline if any test fails)
+        working-directory: warehouse
+        run: dbt build
+
+      - name: Regression discontinuity analysis
+        run: python analysis/rd_late_delivery.py
+
+      - name: Export marts for Evidence (DuckDB 1.4 format)
+        run: python reports/export_db.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: reports/package-lock.json
+
+      - name: Build static dashboard
+        working-directory: reports
+        run: |
+          npm ci
+          npm run sources:strict
+          npm run build:strict
+
+      # Skipped until the Vercel secrets exist, so the pipeline can go green first.
+      - name: Deploy to Vercel
+        if: env.VERCEL_TOKEN != ''
+        run: npx --yes vercel@66.2.0 deploy reports/build --prod --yes --token "$VERCEL_TOKEN"

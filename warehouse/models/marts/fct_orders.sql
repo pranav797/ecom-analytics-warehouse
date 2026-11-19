@@ -20,6 +20,7 @@ select
     o.order_id,
     o.customer_id,
     c.customer_unique_id,
+    c.state  as customer_state,  -- where this order was shipped
     o.order_status,
     o.purchased_at,
     date_trunc('month', o.purchased_at)::date  as purchase_month,

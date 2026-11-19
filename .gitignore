@@ -15,7 +15,6 @@ warehouse/logs/
 # evidence
 reports/node_modules/
 reports/build/
-reports/.evidence/
 
 # secrets
 .env
