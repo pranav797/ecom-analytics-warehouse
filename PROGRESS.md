@@ -201,3 +201,14 @@ records what happened.
   and the live URL.
 - Right after the push, `gh run list` showed no run yet, and the repo had no secrets. The first
   run is expected to fail at the Kaggle download until `KAGGLE_API_TOKEN` is added.
+- **First green CI run** (run 44440229486, 1m29s): every step passed on Ubuntu, and the results
+  match local exactly (99,441 orders, dbt PASS=85, kink −0.624, 6 Evidence sources). The deploy
+  step was skipped because `VERCEL_PROJECT_ID` wasn't set yet.
+- The two runs before it failed at the Kaggle download. They ran before `KAGGLE_API_TOKEN` was
+  added, as expected.
+- Hardened the deploy step to require **all three** Vercel secrets. With only the token, the
+  Vercel CLI would have created a new project instead of deploying to the user's one.
+- GitHub warned that the actions ran on deprecated Node 20. Bumped checkout, setup-python and
+  setup-node to v7, which run on Node 24.
+- The Vercel project was created from the GitHub import with preset "Other" and no build command.
+  The Git connection should be disconnected so Vercel doesn't redeploy the raw repo on every push.
