@@ -16,3 +16,8 @@ models:
     marts:
       +schema: marts
       +materialized: table
+
+vars:
+  # Complete months only: 2016 is sparse (Nov 2016 has no orders) and Sep-Oct 2018 have no delivered orders.
+  metrics_start_month: "2017-01-01"
+  metrics_end_month: "2018-08-01"

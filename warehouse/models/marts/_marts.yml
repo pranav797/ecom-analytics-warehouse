@@ -72,6 +72,8 @@ models:
     columns:
       - name: seller_id
         data_tests: [unique, not_null]
+      - name: lifetime_gmv
+        description: '{{ doc("metric_gmv") }}'
 
   - name: dim_customers
     description: >
@@ -85,3 +87,56 @@ models:
           - expression_is_true:
               arguments:
                 expression: "orders >= 1"
+      - name: is_repeat_within_180d
+        description: '{{ doc("metric_repeat_purchase") }}'
+
+  - name: mart_seller_monthly
+    description: >
+      One row per seller x month (purchase month) with >= 1 delivered order, limited to complete
+      months (vars metrics_start_month..metrics_end_month). Source for merchant KPIs on the dashboard.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "seller_id || '-' || month"
+    columns:
+      - name: gmv
+        description: '{{ doc("metric_gmv") }}'
+      - name: aov
+        description: '{{ doc("metric_aov") }}'
+      - name: on_time_rate
+        description: '{{ doc("metric_on_time_rate") }}'
+        data_tests:
+          - expression_is_true:
+              arguments:
+                expression: "on_time_rate between 0 and 1"
+      - name: avg_review_score
+        description: '{{ doc("metric_avg_review") }}'
+        data_tests:
+          - expression_is_true:
+              arguments:
+                expression: "avg_review_score between 1 and 5 or avg_review_score is null"
+
+  - name: mart_seller_cohorts
+    description: '{{ doc("metric_seller_retention") }}'
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "cohort_month || '-' || months_since_first_sale"
+      - expression_is_true:
+          arguments:
+            expression: "retention_rate between 0 and 1"
+      - expression_is_true:
+          arguments:
+            expression: "months_since_first_sale > 0 or retention_rate = 1"  # month 0 is 100% by definition
+
+  - name: mart_delivery_reviews
+    description: >
+      One row per days_vs_estimate value (delivered orders with a review): review outcomes and
+      covariate averages. Feeds the dashboard's RD plot. The RD estimate uses order-level data.
+    columns:
+      - name: days_vs_estimate
+        data_tests: [unique, not_null]
+      - name: share_review_before_delivery
+        description: >
+          Jumps from ~0.6% at 0 to 70% at +3 days: Olist appears to send the review survey around the
+          promised date, so late customers often review before the package arrives.

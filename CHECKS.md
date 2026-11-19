@@ -199,3 +199,101 @@ avoids.
   like if it were keyed on `customer_id`?
 - Why is the raw gap between late and on-time reviews (2.27 vs 4.29) **not** the causal effect
   of lateness?
+
+---
+
+## Phase 4: Metrics and causal analysis
+
+### What happened, in plain words
+1. **Three more summary tables** in `marts`:
+   - `mart_seller_monthly`: one row per seller per month, with sales (GMV), orders, average order
+     value, on-time rate and average review.
+   - `mart_seller_cohorts`: groups sellers by the month of their first sale, then shows what share
+     of them were still selling 1, 2, 3… months later.
+   - `mart_delivery_reviews`: one row per "days early or late" value, with the average review.
+     It's the table behind the RD chart.
+2. **A repeat-purchase flag** on `dim_customers` (`is_repeat_within_180d`).
+3. **Metric definitions written once**, in `models/marts/metrics.md`. The YAML points to them with
+   `{{ doc("metric_gmv") }}`, so the same definition shows up on every model that uses it.
+4. **A metric window** in `dbt_project.yml` (`vars:`): Jan 2017–Aug 2018, the complete months only.
+5. **The analysis script** `analysis/rd_late_delivery.py`. It reads order-level data from DuckDB,
+   runs 17 estimates, and saves them to a new table, **`analysis.rd_results`**. This is the first
+   table that dbt doesn't create.
+6. **The memo** `analysis/memo.md`: the answer, how sure we are, and what to do.
+
+### The result in one sentence
+Being late *at all* barely changes the average review. **Each extra day late costs about 0.6
+stars**, so how late an order is matters far more than whether it crossed the promised date.
+
+### Run it
+```bash
+cd warehouse && ../.venv/Scripts/dbt build; cd ..
+.venv/Scripts/python analysis/rd_late_delivery.py
+```
+You should see `PASS=85` from dbt. The script prints a table of 17 rows (it takes about a minute)
+and ends with `Wrote analysis.rd_results`. Each time dbt rebuilds the marts, rerun the script so
+the results match.
+
+### Confirm the output
+1. **The headline numbers**:
+   ```bash
+   .venv/Scripts/python -c "import duckdb; print(duckdb.connect('data/warehouse.duckdb', read_only=True).sql(\"SELECT spec, outcome, round(estimate,3) est, round(ci_low,3) lo, round(ci_high,3) hi, round(p_value,3) p FROM analysis.rd_results WHERE spec IN ('main','kink (slope change)')\"))"
+   ```
+   The score row should show about −0.03 (not significant), and the kink row about −0.62
+   (significant).
+2. **See the shape yourself**. This is the chart the whole analysis is about:
+   ```bash
+   .venv/Scripts/python -c "import duckdb; print(duckdb.connect('data/warehouse.duckdb', read_only=True).sql('SELECT days_vs_estimate, orders, round(avg_review_score,2) avg FROM marts.mart_delivery_reviews WHERE days_vs_estimate BETWEEN -6 AND 8 ORDER BY 1'))"
+   ```
+   Left of 0 the scores stay flat around 4.1–4.3. Right of 0 they fall each day. That bend is the
+   finding.
+3. **Seller retention**. About 60% of new sellers sell again the next month, and about 47% six
+   months later:
+   ```bash
+   .venv/Scripts/python -c "import duckdb; print(duckdb.connect('data/warehouse.duckdb', read_only=True).sql('SELECT months_since_first_sale k, round(sum(active_sellers)/sum(cohort_sellers),3) retention FROM marts.mart_seller_cohorts GROUP BY 1 ORDER BY 1 LIMIT 7'))"
+   ```
+4. **Repeat purchase rate**. Expect 1,095 repeaters out of 56,450 eligible customers, about 1.9%.
+   The other ~40K customers are null: they're too recent to watch for 180 days, or have no
+   delivered order.
+   ```bash
+   .venv/Scripts/python -c "import duckdb; print(duckdb.connect('data/warehouse.duckdb', read_only=True).sql('SELECT count(*) FILTER (WHERE is_repeat_within_180d) repeaters, count(is_repeat_within_180d) eligible, round(avg(is_repeat_within_180d::int),4) rate FROM marts.dim_customers'))"
+   ```
+5. **Read the metric docs** in the browser: run `dbt docs generate` and `dbt docs serve`, open
+   `mart_seller_monthly`, and click the `gmv` column. You'll see the full GMV definition, including
+   the rejected alternatives.
+6. **Change the window on purpose**. In `dbt_project.yml`, set `metrics_start_month` to
+   `"2018-01-01"` and run `dbt build --select mart_seller_cohorts`. There are now fewer cohorts, and
+   the longest one has fewer months. Put it back afterwards.
+
+### Words you'll need for interviews
+| Term | Plain meaning here |
+|---|---|
+| **Running variable** | The number that decides who's "treated": days vs the promised date |
+| **Cutoff** | 0.5, between "on the day" (0) and "1 day late" (+1) |
+| **Bandwidth** | How many days on each side the estimate uses (about 4 here, chosen automatically) |
+| **Level jump** | Does the score suddenly drop at the cutoff? About −0.03, so basically no |
+| **Kink** | Does the *slope* change at the cutoff? Yes: from flat to −0.6 stars per day |
+| **Placebo cutoff** | A fake cutoff (−5, +5) where nothing should happen. −5 passed; +5 failed because the curve flattens out there |
+| **Covariate balance** | Things lateness can't cause (price, distance) shouldn't jump at the cutoff. They don't; freight is borderline |
+| **Bunching** | Too many orders just before the deadline, which suggests rushing. Found: 36% fewer orders just after the cutoff than expected. This is the main weakness |
+| **Robust CI** | The confidence interval from `rdrobust`, corrected for the bias of fitting a straight line |
+
+### Decisions made in this phase
+| Decision | Why |
+|---|---|
+| A repeat purchase must come **more than 24h** after the first order | 28% of "second orders" came within an hour: one cart split by seller |
+| Customers too recent to observe for a full 180 days are left out (null), not counted as non-repeat | Otherwise recent customers would drag the rate down |
+| Metric window Jan 2017–Aug 2018 | 2016 is sparse (November is missing) and Sep–Oct 2018 have no deliveries |
+| Reviews written before delivery are **kept** in the main estimate | They're 70% of reviews at +3 days. Dropping them removes mostly late orders |
+| Standard errors clustered by seller | One seller's reviews are related to each other, not independent |
+| "Narrowest feasible" bandwidth of 2.6 days instead of half the optimal | With whole days, half the optimal (~1.9) leaves only one day per side |
+
+### Make sure you can answer
+- Why is "late orders average 2.27 vs 4.29 on time" not the causal effect?
+- The direct day 0 vs day +1 comparison says −0.30, but the RD level jump says −0.03. Why do they
+  differ, and which do you trust?
+- What does the bunching result mean, and why does it hurt the level-jump estimate more than the
+  kink estimate?
+- Why does the +5 placebo fail, and does that undermine the main result?
+- Why is repeat purchase defined with a 24h gap and a 180-day window?
+- What does the memo recommend, and what experiment would test it?
