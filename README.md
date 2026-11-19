@@ -117,7 +117,6 @@ warehouse/    dbt project (models/, macros/, tests/)
 analysis/     rd_late_delivery.py, memo.md
 reports/      Evidence dashboard (pages/, sources/, export_db.py)
 .github/      build-deploy.yml
-PLAN.md       original plan · PROGRESS.md work log · CHECKS.md how to verify each phase
 ```
 
 ## Design notes

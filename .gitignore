@@ -25,3 +25,8 @@ warehouse/.user.yml
 # local editor / assistant config
 .claude/
 .vscode/
+
+# personal planning / progress notes (kept locally)
+PLAN.md
+PROGRESS.md
+CHECKS.md
