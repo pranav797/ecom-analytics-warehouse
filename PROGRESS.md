@@ -146,7 +146,7 @@ records what happened.
 
 ---
 
-## Phase 5: Dashboard and deploy (in progress, not committed yet)
+## Phase 5: Dashboard and deploy (in progress), local work in commit `9243ac9`
 
 **Done**
 - Logging: created this `PROGRESS.md`, covering setup through Phase 4.
@@ -194,5 +194,10 @@ records what happened.
 - **The Cloudflare Pages fallback from the plan won't work.** The build has two DuckDB-WASM files
   of 34 MB and 39 MB, over Cloudflare's 25 MB per-file limit. Vercel and Netlify are fine. The
   data Parquet files are tiny (max 118 KB). Total build: 89 MB.
-- **Not done yet; needs the user:** create the GitHub repo and push, add the secrets, create the
-  Vercel project, and see the first green run and live URL. The workflow has **not been run** yet.
+- Created the **public** repo https://github.com/pranav797/ecom-analytics-warehouse and pushed
+  `main`. Checked first that no data files or tokens were in the commit.
+- **Not done yet; needs the user:** add the `KAGGLE_API_TOKEN` secret, create the Vercel project
+  and add `VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID`, then see the first green run
+  and the live URL.
+- Right after the push, `gh run list` showed no run yet, and the repo had no secrets. The first
+  run is expected to fail at the Kaggle download until `KAGGLE_API_TOKEN` is added.
