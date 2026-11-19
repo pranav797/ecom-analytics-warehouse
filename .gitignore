@@ -21,3 +21,7 @@ reports/build/
 
 # dbt local user id
 warehouse/.user.yml
+
+# local editor / assistant config
+.claude/
+.vscode/

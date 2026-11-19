@@ -214,8 +214,8 @@ records what happened.
   The Git connection should be disconnected so Vercel doesn't redeploy the raw repo on every push.
 - **`VERCEL_ORG_ID` confusion:** the user removed it, thinking a Hobby account has no org. The
   Vercel CLI requires it alongside the project ID. A Hobby account's scope ("pranav797's
-  projects") is a team, with Team ID `team_PrHHqNlGLTO60aKIOS7Zs1Tj`, which was read from a
-  Vercel API error response. Set as the secret with the user's OK.
+  projects") is a team, and its Team ID is the org ID. Read here from a Vercel API error response
+  and set as the secret with the user's OK. The ID itself is kept out of the repo.
 - The Node 24 action versions ran green with no deprecation warning (run 44440525767).
 - **First deploy:** run 44440878431, triggered by hand. Every step passed, including the deploy.
   **Live at https://ecom-analytics-warehouse.vercel.app.** All 4 pages return HTTP 200 publicly,
@@ -245,3 +245,17 @@ records what happened.
 - Reusable A/B module validated on Cookie Cats.
 - Seller funnel with the Marketing Funnel dataset.
 - Moving the warehouse to BigQuery.
+
+---
+
+## Repo cleanup
+
+- Scanned every tracked file and the full git history. There were **no credentials or tokens**,
+  and every commit uses the GitHub noreply email.
+- **Stopped tracking `.claude/`** (local preview config) and **`.vscode/settings.json`** (personal
+  editor setting, picked up by `git add -A` in Phase 3). Both are now in `.gitignore` and still
+  exist locally.
+- Removed the Vercel team ID from this file. It's an identifier, not a credential, but there's no
+  reason for it to be public.
+- **Still in git history:** the old commits still contain these files and the team ID. Removing
+  them for good needs a history rewrite and a force-push. Not done without the user's go-ahead.
