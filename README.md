@@ -17,16 +17,14 @@ retention) and answers one question with a causal design:
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[Kaggle CSVs] -->|ingest/load_raw.py| B[(DuckDB: raw)]
-    B -->|dbt staging| C[(staging)]
-    C -->|dbt intermediate| D[(intermediate)]
-    D -->|dbt marts + tests| E[(marts)]
-    E --> F[analysis/rd_late_delivery.py]
+    B -->|dbt: staging → intermediate → marts, + 66 tests| E[(marts)]
+    E --> F[RD analysis<br/>analysis/rd_late_delivery.py]
     F -->|analysis.rd_results| E
-    E -->|reports/export_db.py| G[Evidence sources → Parquet]
-    G -->|static build| H[Vercel]
-    I[GitHub Actions] -.runs on every push to main.-> A
+    E -->|export_db.py → Evidence sources| G[Parquet + static site]
+    G --> H[Vercel CDN]
+    I[GitHub Actions<br/>on every push to main] -.runs all of this.-> A
 ```
 
 | Layer | Tool |
