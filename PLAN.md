@@ -262,6 +262,14 @@ Building in Actions and pushing the finished static site means Vercel never need
 
 Don't write a result until it exists.
 
+**Filled in (2026-11-18), every number from the built project:**
+
+**E-Commerce Analytics Warehouse** | Python, SQL, dbt, DuckDB, Evidence, GitHub Actions · [live](https://ecom-analytics-warehouse.vercel.app)
+- Modelled **99K marketplace orders** into a **dbt** warehouse with **19** staging/intermediate/mart models and **66** automated **data-quality tests**, rebuilt from raw data and deployed on every push by a GitHub Actions pipeline.
+- Estimated the causal effect of late delivery on merchant review scores with a **regression discontinuity** design: each extra day late cost **0.62 stars** (95% CI 0.52–0.73), with no significant penalty for just missing the promised date. Published merchant KPIs and the findings in a static **Evidence** dashboard on Vercel.
+
+Shorter second bullet, if space is tight: "…with a **regression discontinuity** design (**−0.62 stars per day late**, 95% CI 0.52–0.73), publishing merchant KPIs in a static **Evidence** dashboard on Vercel."
+
 ---
 
 ## 12. Interview prep — questions to be ready for

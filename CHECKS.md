@@ -362,3 +362,38 @@ editing, use `npm run dev` instead; pages reload as you save.
 - Why does the pipeline export a second, older-format DuckDB file?
 - Why can CI deploy to Vercel without Vercel ever seeing the Kaggle credentials?
 - What would you lose by moving to the new Evidence Studio, and what would you gain?
+
+---
+
+## Phase 6: Ship (MVP)
+
+### What happened, in plain words
+- The **README** is now the front page of the project: what it is, the result, how it's built,
+  and how to run it. It's what a recruiter or interviewer reads first.
+- The **resume entry** in `PLAN.md` §11 now has real numbers, all taken from the built project.
+
+### Confirm the output
+1. **Open the repo on GitHub** (https://github.com/pranav797/ecom-analytics-warehouse). The README
+   should show the architecture diagram as a rendered flowchart (GitHub draws mermaid), and every
+   link should work: live site, memo, metrics.
+2. **Check every resume number against its source**:
+   - 99K orders: `raw.orders` has 99,441 rows
+   - 19 models and 66 tests: run these from `warehouse/`:
+     ```bash
+     ../.venv/Scripts/dbt ls --resource-type model -q | wc -l
+     ../.venv/Scripts/dbt ls --resource-type test -q | wc -l
+     ```
+   - −0.62 (0.52–0.73): the `kink (slope change)` row of `analysis.rd_results`
+3. **Read the README as a stranger would**. Can you tell what the project found in the first 10
+   seconds?
+
+### Make sure you can answer
+These are the interview questions from `PLAN.md` §12. You should now be able to answer every one
+from what you built:
+- Why staging / intermediate / marts?
+- How is repeat purchase rate defined, and what alternatives did you reject?
+- Why `customer_unique_id` instead of `customer_id`?
+- Why regression discontinuity instead of comparing late vs on-time orders?
+- What would invalidate the RD result? What did the placebo and bunching checks show?
+- What experiment would you run next? (How many orders it needs is the stretch power analysis.)
+- Why Evidence and static hosting instead of a live app?

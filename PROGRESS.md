@@ -221,6 +221,27 @@ records what happened.
   **Live at https://ecom-analytics-warehouse.vercel.app.** All 4 pages return HTTP 200 publicly,
   and the Findings page renders its numbers from the deployed Parquet files with no console
   errors.
-- **Not verified:** whether the Vercel project's Git connection was disconnected. The Vercel
-  connector in this session has no access to the user's scope (403). If it's still connected,
-  Vercel may also redeploy the raw repo on push.
+- The Vercel Git connection was still on after setup (the user's screenshot showed "Connected").
+  The pipeline's deploy happened to land last, so the live site was unaffected. The user then
+  **disconnected** it, so only GitHub Actions deploys now.
+
+---
+
+## Phase 6: Ship (MVP)
+
+**Done**
+- Rewrote `README.md` for someone reading the repo for the first time:
+  - live link and the headline result
+  - a mermaid architecture diagram and the stack
+  - the warehouse layers with model and test counts, and a metric definitions table
+  - the analysis, including the failed checks
+  - how to run it locally, the repo layout, design notes, and the license
+- Filled in the resume entry in `PLAN.md` §11 with real numbers: **99K orders, 19 models,
+  66 tests, −0.62 stars per day late (95% CI 0.52–0.73)**, plus a shorter variant.
+- Counts taken from `dbt ls`, not estimated: 19 models, 66 tests.
+
+**Not done (stretch, per plan)**
+- Experiment design + power analysis (`analysis/experiment_design.md`, `power_analysis.py`).
+- Reusable A/B module validated on Cookie Cats.
+- Seller funnel with the Marketing Funnel dataset.
+- Moving the warehouse to BigQuery.
